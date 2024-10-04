@@ -1,0 +1,54 @@
+name: Sync and Modify
+
+on:
+  workflow_dispatch:  # Manual trigger
+
+jobs:
+  sync-and-modify:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout forked repo
+      uses: actions/checkout@v2
+      with:
+        repository: ${{ github.repository }}
+        ref: dev-c3
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Set Git user identity
+      run: |
+        git config --global user.name "deetungsten"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+    - name: Sync with upstream repo
+      run: |
+        git remote add upstream https://github.com/sunnypilot/sunnypilot.git
+        git fetch upstream dev-c3
+        git merge --allow-unrelated-histories upstream/dev-c3
+
+    - name: Modify files
+      run: |
+        # Modify selfdrive/controls/controlsd.py
+        sed -i 's/self.d_camera_hardware_missing = self.params.get_bool("DriverCameraHardwareMissing") and not is_registered_device()/self.d_camera_hardware_missing = self.params.get_bool("DriverCameraHardwareMissing")/' selfdrive/controls/controlsd.py
+
+        # Modify system/athena/registration.py
+        sed -i '/needs_registration = None in (IMEI, HardwareSerial, dongle_id)/ {
+          a \ \ return UNREGISTERED_DONGLE_ID
+        }' system/athena/registration.py
+
+        # Modify system/hardware/hardwared.py
+        sed -i '/if TICI:/ {
+          N
+          /if not os.path.isfile("\/persist\/comma\/living-in-the-moment"):/ {
+            s/if TICI:/if False:/
+          }
+        }' system/hardware/hardwared.py
+
+        # Delete the exact line in system/manager/process_config.py
+        sed -i '/NativeProcess("loggerd", "system\/loggerd", \[\".\/loggerd\"\], logging),/d' system/manager/process_config.py
+
+    - name: Commit and push changes
+      run: |
+        git add .
+        git commit -m "Automated modifications"
+        git push origin dev-c3
