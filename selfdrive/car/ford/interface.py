@@ -30,7 +30,8 @@ class CarInterface(CarInterfaceBase):
     ret.safetyConfigs = cfgs
 
     ret.experimentalLongitudinalAvailable = True
-    if experimental_long:
+    # Ported from sunnypilot: force openpilot longitudinal control for radar-equipped Fords
+    if experimental_long or not ret.radarUnavailable:
       ret.safetyConfigs[-1].safetyParam |= Panda.FLAG_FORD_LONG_CONTROL
       ret.openpilotLongitudinalControl = True
 
