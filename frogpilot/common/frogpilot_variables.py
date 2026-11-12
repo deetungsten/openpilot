@@ -1779,6 +1779,10 @@ class FrogPilotVariables:
     latAccelFactor = CP.lateralTuning.torque.latAccelFactor
     longitudinalActuatorDelay = CP.longitudinalActuatorDelay
     toggle.openpilot_longitudinal = CP.openpilotLongitudinalControl and (toggle.is_honda_nidec or toggle.car_make == "gm" or not toggle.disable_openpilot_long)
+    # FrogPilot variables
+    # On cars where longitudinal is user opt-in, don't let default-on longitudinal features activate
+    # when control was forced by a port (e.g. radar-equipped Fords) instead of the user enabling it
+    user_longitudinal = not CP.experimentalLongitudinalAvailable or params.get_bool("ExperimentalLongitudinalEnabled")
     pcm_cruise = CP.pcmCruise
     startAccel = CP.startAccel
     steerActuatorDelay = CP.steerActuatorDelay
@@ -1880,7 +1884,7 @@ class FrogPilotVariables:
 
     toggle.cluster_offset = self.get_value("ClusterOffset", cast=float, condition=toggle.car_make == "toyota")
 
-    toggle.conditional_experimental_mode = toggle.openpilot_longitudinal and self.get_value("ConditionalExperimental")
+    toggle.conditional_experimental_mode = toggle.openpilot_longitudinal and user_longitudinal and self.get_value("ConditionalExperimental")
     toggle.conditional_curves = self.get_value("CECurves", condition=toggle.conditional_experimental_mode)
     toggle.conditional_curves_lead = self.get_value("CECurvesLead", condition=toggle.conditional_curves)
     toggle.conditional_lead = self.get_value("CELead", condition=toggle.conditional_experimental_mode)
@@ -1897,7 +1901,7 @@ class FrogPilotVariables:
     toggle.conditional_signal_lane_detection = self.get_value("CESignalLaneDetection", condition=toggle.conditional_experimental_mode and toggle.conditional_signal != 0)
     toggle.cem_status = self.get_value("ShowCEMStatus", condition=toggle.conditional_experimental_mode) or toggle.debug_mode
 
-    toggle.curve_speed_controller = toggle.openpilot_longitudinal and self.get_value("CurveSpeedController")
+    toggle.curve_speed_controller = toggle.openpilot_longitudinal and user_longitudinal and self.get_value("CurveSpeedController")
     toggle.curve_speed_profile = self.get_value("CurveSpeedProfile", cast=int, condition=toggle.curve_speed_controller)
     toggle.csc_status = self.get_value("ShowCSCStatus", condition=toggle.curve_speed_controller) or toggle.debug_mode
 
@@ -2171,7 +2175,7 @@ class FrogPilotVariables:
 
     toggle.sng_hack = self.get_value("SNGHack", condition=toggle.openpilot_longitudinal and toggle.car_make == "toyota" and not has_pedal and not has_sng)
 
-    toggle.speed_limit_controller = toggle.openpilot_longitudinal and self.get_value("SpeedLimitController")
+    toggle.speed_limit_controller = toggle.openpilot_longitudinal and user_longitudinal and self.get_value("SpeedLimitController")
     toggle.force_mph_dashboard = self.get_value("ForceMPHDashboard", condition=toggle.speed_limit_controller and toggle.car_make == "toyota")
     toggle.map_speed_lookahead_higher = self.get_value("SLCLookaheadHigher", cast=int, condition=toggle.speed_limit_controller)
     toggle.map_speed_lookahead_lower = self.get_value("SLCLookaheadLower", cast=int, condition=toggle.speed_limit_controller)
